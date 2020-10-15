@@ -1,0 +1,308 @@
+Python code 
+
+import pandas as pd
+import re
+import numpy as np
+
+#assembling co-ordinates for operons. operonmap.op downloaded from DOOR3
+
+with open('operonmap.opr', 'r') as f:
+      
+      operonmap = f.read()
+
+opr = str(operonmap)
+
+#pandas used to separate features into columns.
+op_df = pd.DataFrame(opr.split('\n'), columns = ['f'])
+
+op_df = (op_df['f'].str.split('\t', expand = True))
+op_df.columns = ['operonid','gi','synonym','start','end','strand','length','cog','product']
+
+#irrelevant columns are excluded
+op_df = op_df.drop(columns = ['gi','cog','product','length'])
+
+#creating a dictionary with ID as key, co-ordinates and strand (for this operon) as a list. 
+op_df1 = op_df.groupby('operonid')[['start','end','strand']].agg(list)
+
+op_df1['result'] = op_df1.apply(lambda x: (x['start'][0], x['end'][-1], set(x['strand'])),axis =1)
+
+#drop NA’s
+op_df1['result'] = op_df1['result'].dropna()
+
+#putting results into a dataframe (2 required for later formatting)
+op_df1['result1'] = op_df1['result']
+
+newdf1 = op_df1.iloc[:,3:4]
+newdf2 = op_df1.iloc[:,4:5]
+
+newdf1.to_csv('operongenes1_26.6.csv', index=False, header= False, sep=',', encoding='utf-8')
+newdf2.to_csv('operongenes2_26.6.csv', index=False, header= False, sep=',', encoding='utf-8')
+
+#cleaning up new dataframe with co-ordinates
+with open('operongenes1_26.6.csv', 'r') as f:with open('operongenes2_26.6.csv', 'r') as f:
+      
+      genes = f.readlines()
+
+lines = ''
+for line in genes:
+      lines += line.replace('"(None, None, {None})"\n','').replace('"','').replace("('","").replace("', '","\t").replace("', {'","\t").replace("'})","")
+
+
+
+#writing data to a text file
+f = open('operongenes1_26.6.txt', 'w')
+
+for line in lines:
+      f.write(line)
+
+f.close()
+      
+with open('operongenes2_26.6.csv', 'r') as f:with open('operongenes2_26.6.csv', 'r') as f:
+	
+	genes = f.readlines()
+
+lines = ''
+for line in genes:
+      lines += line.replace('"(None, None, {None})"\n','').replace('"','').replace("('","").replace("', '","\t").replace("', {'","\t").replace("'})","")
+
+#writing this to a txt file
+f = open('operongenes2_26.6.txt', 'w')
+for line in lines:
+      f.write(line)
+
+f.close()
+
+##getting genes in operon map.  operonmap.opr downloaded from DOOR3
+
+with open('operonmap.opr', 'r') as f:
+      
+      operonmap = f.read()
+
+opr = str(operonmap)
+
+#inserting into a dataframe 
+op_df2 = pd.DataFrame(opr.split('\n'), columns = ['f'])
+op_df2 = (op_df2['f'].str.split('\t', expand = True))
+#split data into columns
+op_df2.columns = ['operonid','gi','synonym','start','end','strand','length','cog','product']
+#resetting index
+op_df2 = op_df2.reindex(op_df2.index.drop(0)).reset_index(drop=True)
+
+#excluding irrelevant data by dropping columns
+op_df2 = op_df2.drop(columns = ['gi','length','cog','product'])
+
+#data cleaning
+op_df2['synonym'] = op_df2.synonym.str.replace('VBD_', 'v')
+
+
+
+
+
+
+
+##Lining up attributes to genes from operon map(line for line)
+
+with open('Mycobacterium_tuberculosis_h37rv.ASM19595v2.45.gff3', 'r') as f:
+      
+      GFF = f.read()
+
+data = ''
+gff = str(GFF)
+
+#extract relevant data with regex 
+extract = re.compile(r'(Chromosome\s\S+\sgene.*;)')
+
+it = extract.finditer(gff)
+
+for match in it:
+      data += match.group(0)
+      data +='\n'
+
+#store in data variable and clean allowing for efficient grouping into columns
+data = data.replace(';N','*N').replace(';biotype','*biotype').replace('ID=gene:', '')
+
+#group data into columns
+gff_df = pd.DataFrame(data.split('\n'), columns = ['f'])
+gff_df = (gff_df['f'].str.split('\t', expand = True))      
+gff_df.columns = ['Chromosome','ena','gene', 'Start','End', 'score','strand','frame','attribute']
+gff = ''
+#selecting attribute data
+gff= gff_df['attribute']
+gff1 = gff.str.split('*', expand = True)
+gff1.columns = ['synonym','Attribute', 'Attribute1']
+gff1['Attribute1'] = gff1.Attribute1.str.replace('biotype', ';biotype')
+
+#merging gene co-ordinates to their attributes
+op_atr_df = pd.merge(op_df2,gff1, on = ['synonym'])
+
+##attaching operon ids to 'genes' and getting them into the operonmap
+with open('operongenes1_26.6.txt', 'r') as f:
+      
+      opr1 = f.readlines()
+
+with open('operongenes2_26.6.txt', 'r') as f:
+      
+      opr2 = f.readlines()
+#counts allowing for ordering of lines
+op_id_count1 = 1132033.5
+op_id_count2 = 1132033.55
+
+gene_id1 = 1132034.0
+gene_id2 = 1132034.0
+transcript_id = 42724.0
+genecord1 = ''
+genecord2 = ''
+#creating gene line with gene id in GFF3 file
+for line in opr1:
+      genecord1 += str(op_id_count1)
+      genecord1 += '\t'
+      genecord1 += line
+      genecord1 = genecord1.replace('+\n','+').replace('-\n','-')
+      genecord1 += '\t'
+      genecord1 += 'ID=gene:'
+      genecord1 += str(gene_id1)
+      genecord1 += '\n'
+      op_id_count1 += 1
+      gene_id1 += 1.0
+#creating mRNA line with transcript ID in GFF3 file
+for line in opr2:
+      genecord2 += str(op_id_count2)
+      genecord2 += '\t'
+      genecord2 += '*'
+      genecord2 += line
+      genecord2 = genecord2.replace('+\n','+').replace('-\n','-')
+      genecord2 += '\t'
+      genecord2 += 'ID=transcript:CCP'
+      genecord2 += str(transcript_id)
+      #genecord2 += '\t'
+      genecord2 += ';Parent=gene:'
+      genecord2 += str(gene_id2)
+      genecord2 += '\n'
+      op_id_count2 += 1
+      transcript_id += 1
+      gene_id2 += 1.0
+
+#creating dataframes for each genecord variable
+op_df3 = pd.DataFrame(genecord1.split('\n'), columns = ['f'])
+op_df3 = (op_df3['f'].str.split('\t', expand = True))      
+op_df3.columns = ['operonid','start','end', 'strand', 'gene_id']
+
+op_df31 = pd.DataFrame(genecord2.split('\n'), columns = ['f'])
+op_df31 = (op_df31['f'].str.split('\t', expand = True))      
+op_df31.columns = ['operonid','start','end', 'strand', 'transcript_id']
+
+#concatenating each dataframe 
+op_df4 = pd.concat([op_atr_df,op_df3,op_df31], ignore_index = False, sort=False )
+
+#ordering by  op_id count variable
+op_df4 = op_df4.sort_values(by='operonid', ascending = True)
+
+#dropping empty rows
+op_df5 = op_df4.drop(index = [2427,3968,3967,2426])#.set_index('operonid')
+
+
+
+
+
+#creating columns for required repeated format data in GFF3 file
+op_df5['chromosome'] = 'Chromosome'
+op_df5['ena'] = 'ena'
+op_df5['score'] = '.'
+op_df5['frame'] = '.'
+
+#ordring columns, thus data lines in format required for GFF3 file
+op_df5 = op_df5[['chromosome','ena','synonym','start','end','score','strand','frame', 'Attribute','Attribute1','transcript_id','gene_id']]
+
+#data cleaning
+op_df5 = op_df5.fillna('gene')
+
+#write to csv file 
+op_df5.to_csv('operonmap+attributes_26.6.csv', index=False, header= False, sep='\t', encoding='utf-8')
+
+
+##write final dataframe to .txt file in gff format
+
+with open('operonmap+attributes_26.6.csv', 'r') as f:
+      
+      opr_atr = f.readlines()
+
+#cleaning data to resemble GFF3 format
+correction = ''
+for line in opr_atr:
+      correction += line.replace('\t;biotype', ';biotype').replace(';\t', ';').replace('-}','-').replace('.\tgene\tgene','.').replace(';gene\tgene',';').replace(';gene', ';').replace(';_id',';gene_id').replace('gene\t*','mRNA\t')
+      regex_correction = re.sub('\tRv\d+\w+','\texon',correction)
+
+#write to file
+f = open('final_gff1_26.6.gff3', 'w')
+
+
+for line in regex_correction:
+      f.write(line)
+
+f.close()
+
+##attach parent gene and parent transcript IDs to map exons to their operons accurately in downstream expression analysis
+
+with open('final_gff1_26.6.gff3', 'r') as f:
+      lines = []
+      for line in f:
+            lines.append(line)
+
+TID = int(42723)
+finalgff = ''
+
+for line in lines:
+      if 'gene_id=' in line:
+            finalgff += line.replace(';\n',';')
+            #finalgff += 'Parent=gene:'
+            #finalgff += str(GID)
+            finalgff += 'Parent=transcript:CCP'
+            finalgff += str(TID)
+            finalgff += ';exon_id=CCP'
+            finalgff += str(TID)
+            finalgff += '-1'
+            finalgff += '\n'
+      else:
+            finalgff += line
+            #GID += 0.5
+            TID += 0.5
+
+#data cleaning
+finalgff = finalgff.replace('.0','').replace('\t;ID=gene',';ID=gene').replace('.\tgene\tID=gene','.\tID=gene').replace(';\tgene\nParent=gene',';Parent=gene').replace('\tgene\n','\n').replace(';\nParent',';Parent')
+
+##adding GFF3 file version information to document 
+f = open('final_gff3_26.6.gff3', 'w')
+
+f.write('##gff-varsion 3\n')
+f.write('##sequence-region\t')
+f.write('Chromosome 1 4411532\n')
+f.write('#!genome-build European Nucleotide Archive ASM19595v2\n')
+f.write('#!genome-version ASM19595v2\n')
+f.write('#!genome-date 2015-02\n')
+f.write('#!genome-build-accession GCA_000195955.2\n')
+f.write('#!genebuild-last-updated 2015-02\n')
+
+for line in finalgff:
+      f.write(line)
+
+f.close()
+
+#creating a document allowing for operons to be counted
+final_line = finalgff.replace('ena\tgene','operon')
+
+f = open('final_gff3_26.docx', 'w')
+
+f.write('##gff-varsion 3\n')
+f.write('##sequence-region\t')
+f.write('Chromosome 1 4411532\n')
+f.write('#!genome-build European Nucleotide Archive ASM19595v2\n')
+f.write('#!genome-version ASM19595v2\n')
+f.write('#!genome-date 2015-02\n')
+f.write('#!genome-build-accession GCA_000195955.2\n')
+f.write('#!genebuild-last-updated 2015-02\n')
+
+for line in final_line:
+      f.write(line)
+
+
+f.close()
