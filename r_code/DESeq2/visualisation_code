@@ -53,7 +53,6 @@ heatmap.2( sampleDistMatrix, trace="none", col=colours)
 plotPCA(rld, intgroup = c( "sample_title" ))
 ```
 
-
 ```{r VOLCANO+PCA_plots_fe_samples} #to show genes/exons worth analysing further
 
 #extracting count data
