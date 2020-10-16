@@ -1,5 +1,19 @@
+#install packages
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("Rsubread")
 
-```{r plotpca_genelevel_all_samples}
+if (!requireNamespace('BiocManager', quietly = TRUE))
+  +     install.packages('BiocManager')
+BiocManager::install('EnhancedVolcano')
+install.packages("gplots")
+
+library(EnhancedVolcano)
+library( "RColorBrewer" )
+library( "gplots" )
+library( "genefilter" )
+
+```{r plot_PCA+HEATMAP_genelevel_all_samples}
 #assigning bam files and annotation files to variables
 bam.files<- list.files("C:/Users/Ambreen Anwar/Documents/BAMfiles", pattern = ".bam$", full.names =TRUE)
 annotation.file <- list.files(pattern = ".gtf$", full.names=TRUE)
@@ -29,19 +43,19 @@ rld <- rlog( dds )
 rld1Sig <- as.data.frame(rld)
 plot( log2( 1+counts(dds1, normalized=TRUE)[, 1:2] ), col="#00000020", pch=20, cex=0.3 )
 plot( assay(rld)[, 1:2], col="#00000020", pch=20, cex=0.3 )
+
 #distances between data similarities between samples, are they as expected?
-library( "RColorBrewer" )
+#plot heatmap
 colours = colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
 heatmap.2( sampleDistMatrix, trace="none", col=colours)
+
+#plot PCA
 plotPCA(rld, intgroup = c( "sample_title" ))
 ```
 
 
 ```{r VOLCANO+PCA_plots_fe_samples} #to show genes/exons worth analysing further
-if (!requireNamespace('BiocManager', quietly = TRUE))
-  +     install.packages('BiocManager')
-BiocManager::install('EnhancedVolcano')
-library(EnhancedVolcano)
+
 #extracting count data
 fe_countdata <- assay( fe_se )
 head( fe_countdata )
@@ -76,17 +90,15 @@ fe_sampleDists
 fe_sampleDistMatrix <- as.matrix( fe_sampleDists )
 rownames(fe_sampleDistMatrix) <- paste( fe_rld$sample_title, sep="-" )
 colnames(fe_sampleDistMatrix) <- NULL
-library( "gplots" )
-library( "RColorBrewer" )
-colours = colorRampPalette( rev(brewer.pal(7, "Blues")) )(150)
-pdf("plot_heatmap.pdf")
 
+colours = colorRampPalette( rev(brewer.pal(7, "Blues")) )(150)
+
+pdf("plot_heatmap.pdf")
 #par(mar=c(10,30,10,10).5)
 heatmap.2( fe_sampleDistMatrix, trace="none", col=colours)
 dev.off()
 
 #clustering heatmap
-library( "genefilter" )
 #genes with the highest differential expression/variance
 fe_vsd <- vst(ddsFeCT, blind=FALSE)
 dxr_fe.sig$gene.exon <- paste(dxr_fe.sig$groupID,dxr_fe.sig$featureID)
@@ -151,6 +163,7 @@ head(ty_rowranges$tx_name)
 ty_rld <- rlog(ddstyCT)
 plotPCA(ty_rld, intgroup = c( "sample_title" ))
 
+#plot volcano plot
 EnhancedVolcano(res_ty_lfcShrink,lab = (ty_rowranges$tx_name) ,x = 'log2FoldChange',y = 'pvalue', xlim = c(-5, 8))
 ```
 
