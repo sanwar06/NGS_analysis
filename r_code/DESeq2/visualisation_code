@@ -1,0 +1,156 @@
+
+```{r plotpca_genelevel_all_samples}
+#assigning bam files and annotation files to variables
+bam.files<- list.files("C:/Users/Ambreen Anwar/Documents/BAMfiles", pattern = ".bam$", full.names =TRUE)
+annotation.file <- list.files(pattern = ".gtf$", full.names=TRUE)
+#running feature counts for gene level counts
+fc <- featureCounts(bam.files, annot.ext = annotation.file, isGTFAnnotationFile = TRUE, isPairedEnd = TRUE, chr_Aliases = chr_aliases)
+#running deseq for gene level differential expression analysis of different iron samples
+col_Data <- data.frame (sample_title  = c("butyrate", "butyrate", "butyrate", "butyrate_plus_glucose", "butyrate_plus_glucose", "butyrate_plus_glucose", "glucose", "tyloxapol_pH5.5", "tyloxapol_pH5.5", "tyloxapol_pH7.0", "tyloxapol_pH7.0", "low_iron_1week", "low_iron_1week", "low_iron_1week", "low_iron_1day", "low_iron_1day", "low_iron_1day", "high_iron", "high_iron", "high_iron", "glucose", "glucose"))
+dds1 <- DESeqDataSetFromMatrix(countData = fc$counts, colData = col_Data, ~ sample_title)
+dds1 <- DESeq(dds1)
+#forming extracts a result table from a DESeq analysis giving base means across samples, log2 fold changes, standard errors, test statistics, p-values and adjusted p-values
+res_low_iron_1week <- results(dds1, contrast=c("sample_title", "low_iron_1week","high_iron"))
+res_low_iron_1day <- results(dds1, contrast=c("sample_title","low_iron_1day","high_iron"))
+res_bg_glucose <- results(dds1, contrast=c("sample_title","glucose","butyrate_plus_glucose"))
+res_bg_butyrate <- results(dds1, contrast=c("sample_title","butyrate","butyrate_plus_glucose"))
+
+#ensuring the columns match the required samples
+mcols(res1, use.names=TRUE)
+#putting results into a dataframe and filtering with a signicance value of 0.1
+res_lowFe_1week <- as.data.frame(res_low_iron_1week[ which(res1$padj < 0.1 ), ])
+res_lowFe_1day <- as.data.frame(res_low_iron_1day[ which(res1$padj < 0.1 ), ])
+res_bg_glucose <- as.data.frame(res_bg_glucose)
+res_bg_butyrate <- as.data.frame(res_bg_butyrate)
+
+#rlog-transformed data analysis
+#difference between log 2 and r log data plot 
+rld <- rlog( dds )
+rld1Sig <- as.data.frame(rld)
+plot( log2( 1+counts(dds1, normalized=TRUE)[, 1:2] ), col="#00000020", pch=20, cex=0.3 )
+plot( assay(rld)[, 1:2], col="#00000020", pch=20, cex=0.3 )
+#distances between data similarities between samples, are they as expected?
+library( "RColorBrewer" )
+colours = colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+heatmap.2( sampleDistMatrix, trace="none", col=colours)
+plotPCA(rld, intgroup = c( "sample_title" ))
+```
+
+
+```{r VOLCANO+PCA_plots_fe_samples} #to show genes/exons worth analysing further
+if (!requireNamespace('BiocManager', quietly = TRUE))
+  +     install.packages('BiocManager')
+BiocManager::install('EnhancedVolcano')
+library(EnhancedVolcano)
+#extracting count data
+fe_countdata <- assay( fe_se )
+head( fe_countdata )
+#forming metadata on each of the iron samples (the “columns” of the count table)
+fe_col_Data <- data.frame (sample_title  = c("low_iron_1week", "low_iron_1week", "low_iron_1week", "low_iron_1day", "low_iron_1day", "low_iron_1day", "high_iron", "high_iron", "high_iron"))
+rownames(fe_col_Data) <- c("SRR1917703_sorted.bam","SRR1917704_sorted.bam","SRR1917705_sorted.bam", "SRR1917706_sorted.bam","SRR1917707_sorted.bam","SRR1917708_sorted.bam","SRR1917709_sorted.bam","SRR1917710_sorted.bam","SRR1917711_sorted.bam")
+head(fe_col_Data)
+#running deseq for exon level differential expression analysis of different iron samples
+ddsFeCountTable <- DESeqDataSetFromMatrix(countData = fe_countdata,colData = fe_col_Data, design = ~ sample_title)
+ddsFeCT <- DESeq(ddsFeCountTable, betaPrior=FALSE)
+res_fe <- results(ddsFeCT, contrast=c("sample_title","low_iron_1week","high_iron"))
+res_fe_lfcShrink <- lfcShrink(ddsFeCT,coef = c("sample_title_low_iron_1week_vs_high_iron"), res=res_fe, type = 'apeglm')
+
+#distances between data similarities between samples, are they as expected?
+#PCA plot
+fe_rld <- rlog(ddsFeCT)
+plotPCA(fe_rld, intgroup = c( "sample_title" ))
+
+#producing volcano plot using EnhancedVolcano package
+fe_se.df <- as.data.frame(assay(fe_se))
+rowranges <- as.data.frame(rowRanges(fe_se))
+head(rowranges$tx_name)
+EnhancedVolcano(res_fe_lfcShrink,lab = (rowranges$tx_name) ,x = 'log2FoldChange',y = 'pvalue', xlim = c(-5, 8))
+```
+
+```{r_heatmap_fe_samples} #rather than a pca
+
+#dist calculates distances between data rows and our samples constitute the columns.
+
+fe_sampleDists <- dist( t( assay(fe_rld) ) )
+fe_sampleDists
+fe_sampleDistMatrix <- as.matrix( fe_sampleDists )
+rownames(fe_sampleDistMatrix) <- paste( fe_rld$sample_title, sep="-" )
+colnames(fe_sampleDistMatrix) <- NULL
+library( "gplots" )
+library( "RColorBrewer" )
+colours = colorRampPalette( rev(brewer.pal(7, "Blues")) )(150)
+pdf("plot_heatmap.pdf")
+
+#par(mar=c(10,30,10,10).5)
+heatmap.2( fe_sampleDistMatrix, trace="none", col=colours)
+dev.off()
+
+#clustering heatmap
+library( "genefilter" )
+#genes with the highest differential expression/variance
+fe_vsd <- vst(ddsFeCT, blind=FALSE)
+dxr_fe.sig$gene.exon <- paste(dxr_fe.sig$groupID,dxr_fe.sig$featureID)
+colnames(fe_rld) <- paste( fe_rld$sample_title, sep="-" )
+row.names(fe_rld) <- paste( dxr_fe.sig$gene.exon, sep="-" )
+topVarGenes <- head( order( rowVars( assay(fe_rld) ), decreasing=TRUE ), 30 )
+colnames(fe_rld) <- paste( fe_rld$sample_title, sep="-" )
+heatmap.2( assay(fe_rld)[ topVarGenes, ], scale="row",trace="none", dendrogram="column", col = colorRampPalette( rev(brewer.pal(9, "RdBu")) )(255), margins = c(10,12))
+
+ ```
+
+```{r VOLCANO+PCA_plot_butyrate_glucose_samples} #to show genes/exons worth analysing further
+
+#extracting count data
+bg_countdata <- assay( bg_se )
+head( bg_countdata )
+#forming metadata on each of the butyrate and glucose samples (the “columns” of the count table)
+bg_col_Data <- data.frame (sample_title  = c("butyrate", "butyrate", "butyrate", "butyrate_plus_glucose", "butyrate_plus_glucose", "butyrate_plus_glucose", "glucose","glucose", "glucose"))
+rownames(bg_col_Data) <- c("SRR1917694_sorted.bam","SRR1917695_sorted.bam", "SRR1917696_sorted.bam","SRR1917697_sorted.bam","SRR1917698_sorted.bam","SRR1917699_sorted.bam","SRR1917700_sorted.bam","SRR1917701_sorted.bam","SRR1917702_sorted.bam")
+head(bg_col_Data)
+#running deseq for exon level differential expression analysis of different iron samples
+ddsbgCountTable <- DESeqDataSetFromMatrix(countData = bg_countdata,colData = bg_col_Data, design = ~ sample_title)
+ddsbgCT <- DESeq(ddsbgCountTable, betaPrior=FALSE)
+res_bg <- results(ddsbgCT, contrast=c("sample_title","butyrate_plus_glucose","butyrate"))
+res_bg_lfcShrink <- lfcShrink(ddsbgCT,coef = c("sample_title_butyrate_vs_butyrate_plus_glucose"), res=res_bg, type = 'apeglm')
+
+#producing volcano plot using EnhancedVolcano package
+bg_se.df <- as.data.frame(assay(bg_se))
+bg_rowranges <- as.data.frame(rowRanges(bg_se))
+head(bg_rowranges$tx_name)
+
+#plot PCA 
+bg_rld <- rlog(ddsbgCT)
+plotPCA(bg_rld, intgroup = c( "sample_title" ))
+
+EnhancedVolcano(res_bg_lfcShrink,lab = (bg_rowranges$tx_name) ,x = 'log2FoldChange',y = 'pvalue', xlim = c(-5, 8))
+```
+
+
+```{r VOLCANO+PCA_plot_tyloxapol_samples} #to show genes/exons worth analysing further
+
+#extracting count data
+ty_countdata <- assay( ty_se )
+head( ty_countdata )
+#forming metadata on each of the tyloxapol samples (the “columns” of the count table)
+ty_col_Data <- data.frame (sample_title  = c("tyloxapol_pH5.5", "tyloxapol_pH5.5", "tyloxapol_pH7.0", "tyloxapol_pH7.0"))
+rownames(ty_col_Data) <- c("SRR1917712_sorted.bam","SRR1917713_sorted.bam","SRR1917714_sorted.bam","SRR1917715_sorted.bam")
+head(ty_col_Data)
+#running deseq for exon level differential expression analysis of different iron samples
+ddstyCountTable <- DESeqDataSetFromMatrix(countData = ty_countdata,colData = ty_col_Data, design = ~ sample_title)
+ddstyCT <- DESeq(ddstyCountTable, betaPrior=FALSE)
+res_ty <- results(ddstyCT, contrast=c("sample_title","tyloxapol_pH5.5","tyloxapol_pH7.0"))
+
+res_ty <- results(ddstyCT, contrast=c("sample_title","tyloxapol_pH7.0","tyloxapol_pH5.5"))
+
+#producing volcano plot using EnhancedVolcano package
+ty_se.df <- as.data.frame(assay(ty_se))
+ty_rowranges <- as.data.frame(rowRanges(ty_se))
+head(ty_rowranges$tx_name)
+
+#plot pca
+ty_rld <- rlog(ddstyCT)
+plotPCA(ty_rld, intgroup = c( "sample_title" ))
+
+EnhancedVolcano(res_ty_lfcShrink,lab = (ty_rowranges$tx_name) ,x = 'log2FoldChange',y = 'pvalue', xlim = c(-5, 8))
+```
+
