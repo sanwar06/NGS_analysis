@@ -1,7 +1,11 @@
+install.packages("writexl")
+
+
 library(‘DEXSeq’)
 library(‘DESeq2’)
 library(‘GenomicAlignments’)
 library(‘GenomicFeatures’)
+library("writexl")
 
 ```{r prepare_files_for_dexseq_all_samples}
 
@@ -104,9 +108,9 @@ fe_dxd = estimateExonFoldChanges( fe_dxd, fitExpToVar="condition", denominator =
 dxr_fe = DEXSeqResults( fe_dxd )
 
 dxr_fe.sig <- as.data.frame(dxr_fe[dxr_fe$padj < 0.1 & !is.na(dxr_fe$padj),])
+write_xlsx(dxr_fe.sig,"C:/Users/Ambreen Anwar/Documents/dxr_fe.xlsx")
 
 ```
-
 
 
 ```{r DEXSeq_butyrate+glucose_samples}
@@ -143,7 +147,7 @@ dxr_bg = DEXSeqResults( bg_dxd )
 bg_dxd = estimateExonFoldChanges( bg_dxd, fitExpToVar="condition", denominator = 'butyrate+glucose')
 dxr_bg = DEXSeqResults( bg_dxd )
 dxr_bg.sig <- as.data.frame(dxr_bg[dxr_bg$padj < 0.1 & !is.na(dxr_bg$padj),])
-
+write_xlsx(dxr_bg.sig,"C:/Users/Ambreen Anwar/Documents/dxr_bg.xlsx")
 ```
 
 ```{r DEXseq_analysis_tyloxapol_samples}
@@ -182,7 +186,7 @@ dxr_ty = DEXSeqResults( ty_dxd )
 ty_dxd = estimateExonFoldChanges( ty_dxd, fitExpToVar="condition")
 dxr_ty = DEXSeqResults( ty_dxd )
 dxr_ty.sig <- as.data.frame(dxr_ty[dxr_ty$padj < 0.1 & !is.na(dxr_ty$padj),])
-pdf("plot_ty_1132445.pdf")
+write_xlsx(dxr_ty.sig,"C:/Users/Ambreen Anwar/Documents/dxr_bg.xlsx")
 
 ```
 
