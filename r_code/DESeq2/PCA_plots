@@ -1,0 +1,6 @@
+
+
+
+#visualising clustering between samples and their relationships before normalisation.
+plotPCA(rldFCT, intgroup = c( "sample_title" ))
+
