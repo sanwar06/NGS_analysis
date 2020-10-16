@@ -1,6 +1,27 @@
 library(‘DEXSeq’)
 
 
+```{r_plot_dexseq_results}
 
 #plotting highest differentially expressed genes
 plotDEXSeq(dxr_fe,1132445,FDR = 0.1,fitExpToVar = 'condition', splicing = TRUE, displayTranscripts = TRUE, names = TRUE, norcounts = TRUE, legend=TRUE, cex.axis=1.3, cex=0.6, cex.lab=0.8, lwd=2)
+
+
+plotDEXSeq(dxrC2.C1,1132848,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132475,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132947,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132477,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132770,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132644,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132934,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132487,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132445,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132477,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132947,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132308,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132477,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132770,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132445,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132465,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+plotDEXSeq(dxrC2.C1,1132228,FDR = 0.1,fitExpToVar = 'condition', legend=TRUE, cex.axis=1.2, cex=1.3, lwd=2)
+```
