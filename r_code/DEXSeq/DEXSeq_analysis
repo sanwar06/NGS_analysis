@@ -1,11 +1,29 @@
-install.packages("writexl")
+#install packages
 
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("DEXSeq")
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("DESeq2")
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("GenomicAlignments")
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("GenomicFeatures")
+
+install.packages("writexl")
 
 library(‘DEXSeq’)
 library(‘DESeq2’)
 library(‘GenomicAlignments’)
 library(‘GenomicFeatures’)
 library("writexl")
+
 
 ```{r prepare_files_for_dexseq_all_samples}
 
